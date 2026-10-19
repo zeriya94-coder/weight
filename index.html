@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MARKET BATTLE - WEIGH IT & SAY IT!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #fef08a;
+            background-image: radial-gradient(#fde047 20%, transparent 20%), radial-gradient(#fde047 20%, transparent 20%);
+            background-position: 0 0, 25px 25px;
+            background-size: 50px 50px;
+            color: #1f2937;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        .awning {
+            height: 40px;
+            width: 100%;
+            background: repeating-linear-gradient(135deg, #ef4444, #ef4444 40px, #ffffff 40px, #ffffff 80px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        .awning::after {
+            content: "";
+            position: absolute;
+            bottom: -15px;
+            left: 0;
+            right: 0;
+            height: 15px;
+            background: radial-gradient(circle at 20px 0, transparent 20px, #ffffff 21px);
+            background-size: 40px 15px;
+            background-position: calc(100% + 20px) 0;
+        }
+        .awning.awning-blue { background: repeating-linear-gradient(135deg, #3b82f6, #3b82f6 40px, #ffffff 40px, #ffffff 80px); }
+        .awning.awning-green { background: repeating-linear-gradient(135deg, #10b981, #10b981 40px, #ffffff 40px, #ffffff 80px); }
+
+        .btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 0px rgba(0,0,0,0.2);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: translateY(4px);
+            box-shadow: 0 2px 0px rgba(0,0,0,0.2);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 4px solid #fff;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .answer-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .timer-bar-container {
+            display: flex;
+            align-items: center;
+            background: #e5e7eb;
+            height: 3rem;
+            position: relative;
+            border-bottom: 2px solid #ccc;
+        }
+        .timer-bar-fill {
+            height: 100%;
+            transition: width 1s linear, background-color 0.3s;
+        }
+        .timer-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 3rem;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+            z-index: 5;
+        }
+
+        .pulse-text { animation: pulseText 0.5s infinite alternate; }
+        @keyframes pulseText { from { transform: scale(1); } to { transform: scale(1.1); } }
+        
+        .pulse { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .score-change { animation: floatUp 1s ease-out forwards; pointer-events: none; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        canvas#confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+    </style>
+</head>
+<body class="antialiased selection:bg-yellow-300 selection:text-yellow-900">
+
+    <div id="screen-title" class="screen active justify-center items-center p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-10 max-w-2xl w-full text-center relative overflow-hidden">
+            <div class="awning absolute top-0 left-0"></div>
+            <h2 class="text-xl md:text-2xl text-gray-500 font-bold mt-12 mb-2 tracking-widest uppercase">Year 5 English</h2>
+            <h1 class="text-5xl md:text-7xl font-extrabold text-red-500 mb-2 drop-shadow-sm leading-tight">MARKET<br>BATTLE</h1>
+            <h3 class="text-3xl md:text-4xl font-bold text-blue-500 mb-8 transform -rotate-2">Weigh It & Say It!</h3>
+            
+            <div class="flex justify-center space-x-4 mb-8 text-5xl md:text-6xl">
+                <span>🛒</span><span>⚖️</span><span>🍎</span>
+            </div>
+
+            <button onclick="nav('screen-names')" class="btn bg-green-500 hover:bg-green-400 text-white text-2xl font-bold py-4 px-10 rounded-2xl w-full sm:w-auto inline-block border-b-4 border-green-700">
+                START BATTLE!
+            </button>
+        </div>
+    </div>
+
+    <div id="screen-names" class="screen p-4">
+        <div class="awning"></div>
+        <div class="flex-1 max-w-4xl w-full mx-auto mt-6 flex flex-col">
+            <div class="glass-panel rounded-3xl p-4 md:p-6 flex-1 flex flex-col">
+                <h2 class="text-2xl md:text-3xl font-bold text-center mb-2">📝 SENARAI NAMA MURID</h2>
+                <p class="text-center text-gray-600 mb-4 text-sm md:text-base">Paste pupil names below (one per line)</p>
+                
+                <textarea id="names-input" class="w-full flex-1 border-4 border-gray-200 rounded-xl p-4 text-base md:text-lg focus:outline-none focus:border-blue-400 resize-none font-mono" placeholder="Aisya Arrisa&#10;Humaira&#10;Harraz Naufal&#10;Umairah..."></textarea>
+                
+                <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-lg md:text-xl font-bold bg-yellow-200 px-4 py-2 rounded-lg text-yellow-800 w-full sm:w-auto text-center">
+                        JUMLAH MURID: <span id="student-count">0</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <button onclick="clearNames()" class="btn bg-red-500 hover:bg-red-400 text-white font-bold py-3 px-6 rounded-xl w-full sm:w-auto">CLEAR ALL</button>
+                        <button onclick="prepareTeams()" class="btn bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-8 rounded-xl w-full sm:w-auto text-lg md:text-xl">CONTINUE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-teams" class="screen p-4">
+        <div class="awning awning-blue"></div>
+        <div class="flex-1 max-w-6xl w-full mx-auto mt-6 flex flex-col">
+            <div class="glass-panel rounded-3xl p-4 md:p-6 flex-1 flex flex-col">
+                <h2 class="text-2xl md:text-3xl font-bold text-center mb-4 md:mb-6">🎯 CHOOSE TEAMS</h2>
+                
+                <div class="flex flex-wrap justify-center gap-2 mb-6" id="team-size-selectors"></div>
+
+                <div id="teams-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-1 overflow-y-auto mb-6 p-2 hide-scrollbar"></div>
+                
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t-2 border-gray-100">
+                    <button onclick="nav('screen-names')" class="btn bg-gray-400 hover:bg-gray-300 text-white font-bold py-3 px-6 rounded-xl w-full sm:w-auto">BACK TO NAMES</button>
+                    <button onclick="shuffleCurrentTeams()" class="btn bg-purple-500 hover:bg-purple-400 text-white font-bold py-3 px-6 rounded-xl w-full sm:w-auto">RESHUFFLE</button>
+                    <button onclick="startRound1()" class="btn bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-8 rounded-xl text-lg md:text-xl w-full sm:w-auto pulse hidden" id="btn-start-battle">START BATTLE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-transition" class="screen justify-center items-center p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-10 max-w-3xl w-full text-center relative overflow-hidden">
+            <div class="awning awning-green absolute top-0 left-0"></div>
+            <h1 id="trans-title" class="text-4xl md:text-6xl font-extrabold text-green-500 mt-10 mb-4 drop-shadow-sm"></h1>
+            
+            <div id="trans-rankings" class="bg-gray-50 rounded-2xl p-4 md:p-6 mb-6 shadow-inner max-h-64 overflow-y-auto"></div>
+
+            <h3 id="trans-next" class="text-xl md:text-3xl font-bold text-gray-700 mb-8 px-4"></h3>
+            
+            <button onclick="startNextPhase()" class="btn bg-blue-500 hover:bg-blue-400 text-white text-xl md:text-2xl font-bold py-4 px-12 rounded-2xl w-full sm:w-auto inline-block">
+                LET'S GO!
+            </button>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen flex flex-col h-[100dvh] overflow-hidden bg-gray-100 relative">
+        <div id="game-awning" class="awning shrink-0"></div>
+        
+        <!-- Top Bar -->
+        <div class="bg-white shadow-sm p-2 flex justify-between items-center flex-wrap gap-2 z-10 shrink-0">
+            <div class="flex gap-2 items-center">
+                <div class="font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full text-xs md:text-sm shadow-inner">
+                    <span id="ui-round-name">ROUND 1</span>
+                </div>
+                <div class="font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-xs md:text-sm shadow-inner">
+                    Q: <span id="ui-q-num">1</span>/100
+                </div>
+            </div>
+            <button onclick="requestEndGame()" class="btn bg-red-500 hover:bg-red-400 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-lg">END GAME</button>
+        </div>
+        
+        <!-- Scoreboard Strip -->
+        <div id="ui-scoreboard" class="flex overflow-x-auto gap-2 p-2 bg-white border-b-2 border-gray-200 shrink-0 hide-scrollbar scroll-smooth items-center">
+            <!-- Team scores injected here -->
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="w-full shrink-0 timer-bar-container">
+            <div id="timer-bar" class="timer-bar-fill bg-green-500 w-full"></div>
+            <div id="timer-text" class="timer-text text-gray-800">10</div>
+        </div>
+
+        <!-- Main Question Area -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center max-w-6xl mx-auto w-full relative">
+            
+            <div id="turn-indicator" class="mb-2 text-center w-full">
+                <span class="inline-block bg-white border-4 border-yellow-400 rounded-2xl px-4 py-1 md:px-6 md:py-2 shadow-md max-w-full truncate">
+                    <span class="text-gray-500 font-bold text-xs md:text-sm block uppercase tracking-wider" id="turn-label">CURRENT TURN</span>
+                    <span class="text-xl md:text-3xl font-extrabold text-gray-800 truncate block" id="current-team-name">Team 1</span>
+                </span>
+            </div>
+
+            <div id="steal-banner" class="hidden mb-2 bg-red-500 text-white font-extrabold text-lg md:text-3xl px-6 py-2 rounded-full shadow-lg transform -rotate-1 animate-pulse border-4 border-white text-center w-full max-w-md">
+                🚨 STEAL THE DEAL! 🚨<br>
+                <span class="text-sm md:text-lg font-bold bg-white text-red-500 px-4 py-1 rounded-full inline-block mt-1 truncate max-w-full" id="steal-team-name">Team 2 to steal!</span>
+            </div>
+
+            <!-- Question Card -->
+            <div class="glass-panel rounded-3xl p-4 md:p-8 w-full mb-4 relative text-center shadow-lg flex-shrink-0">
+                <h2 id="question-text" class="text-xl md:text-3xl lg:text-4xl font-bold text-gray-800 leading-snug break-words">Question goes here?</h2>
+            </div>
+
+            <!-- Answers Grid -->
+            <div id="answers-container" class="answer-grid w-full pb-8 flex-1 content-start">
+                <!-- Buttons injected here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-results" class="screen p-4 justify-start overflow-y-auto hide-scrollbar bg-white">
+        <div class="awning awning-blue fixed top-0 left-0 w-full z-20"></div>
+        <div class="max-w-5xl w-full mx-auto mt-16 flex flex-col relative z-10 pb-12">
+            <div class="text-center mb-8">
+                <div id="results-title-header" class="text-4xl md:text-6xl font-extrabold text-yellow-500 mb-2 drop-shadow-md px-2">🏆 MARKET CHAMPIONS 2026 🏆</div>
+                <h2 class="text-2xl font-bold text-gray-600 bg-gray-100 inline-block px-6 py-2 rounded-full shadow-inner">FINAL RESULTS</h2>
+            </div>
+            
+            <div id="all-teams-results" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 px-2">
+                <!-- All teams injected here -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-4 px-2">
+                <button onclick="startNextPhase(true)" class="btn bg-blue-500 hover:bg-blue-400 text-white font-bold py-4 px-6 rounded-xl text-lg md:text-xl w-full sm:w-auto">PLAY AGAIN - SAME TEAMS</button>
+                <button onclick="nav('screen-teams')" class="btn bg-purple-500 hover:bg-purple-400 text-white font-bold py-4 px-6 rounded-xl text-lg md:text-xl w-full sm:w-auto">RESHUFFLE & PLAY</button>
+                <button onclick="nav('screen-names')" class="btn bg-green-500 hover:bg-green-400 text-white font-bold py-4 px-6 rounded-xl text-lg md:text-xl w-full sm:w-auto">NEW CLASS</button>
+                <button onclick="nav('screen-title')" class="btn bg-gray-500 hover:bg-gray-400 text-white font-bold py-4 px-6 rounded-xl text-lg md:text-xl w-full sm:w-auto">TITLE SCREEN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Overlay -->
+    <div id="feedback-overlay" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none hidden bg-black/40 backdrop-blur-sm transition-opacity">
+        <div id="feedback-message" class="text-5xl md:text-9xl font-extrabold transform scale-0 transition-transform duration-300 drop-shadow-2xl text-center px-4 leading-tight"></div>
+    </div>
+
+    <!-- End Game Confirmation Modal -->
+    <div id="end-confirm-modal" class="fixed inset-0 z-[60] flex items-center justify-center hidden bg-black/60 backdrop-blur-md">
+        <div class="bg-white rounded-3xl p-6 md:p-10 max-w-md w-[90%] text-center shadow-2xl border-4 border-red-500 transform scale-100 transition-transform">
+            <div class="text-6xl mb-4">🛑</div>
+            <h2 class="text-3xl font-extrabold text-red-600 mb-2">END GAME NOW?</h2>
+            <p class="text-gray-600 text-lg mb-8 font-semibold">Are you sure you want to finish the battle?</p>
+            <div class="flex flex-col gap-4">
+                <button onclick="cancelEndGame()" class="btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-4 px-6 rounded-xl text-xl w-full">CANCEL - CONTINUE PLAYING</button>
+                <button onclick="confirmEndGame()" class="btn bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-xl text-xl w-full shadow-red-500/50">YES - END GAME</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Info Modal -->
+    <div id="team-info-modal" class="fixed inset-0 z-[60] flex items-center justify-center hidden bg-black/40 backdrop-blur-sm" onclick="closeTeamInfo()">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-[90%] text-center shadow-2xl" onclick="event.stopPropagation()">
+            <h2 id="team-info-title" class="text-2xl font-extrabold mb-4 py-2 rounded-xl text-white"></h2>
+            <ul id="team-info-members" class="text-gray-700 text-lg space-y-2 mb-6 font-semibold max-h-64 overflow-y-auto"></ul>
+            <button onclick="closeTeamInfo()" class="btn bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-xl w-full">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Canvas for Confetti -->
+    <canvas id="confetti" class="hidden"></canvas>
+
+    <script>
+        // Exactly 50 questions (10 Easy, 20 Medium, 20 Hard) for Round 1
+        const Q_R1 = [
+            // 10 Easy
+            {q: "How do you say 100 g?", c: "one hundred grams", w: ["one hundred kilos", "one kilo", "half a kilo"]},
+            {q: "How do you say 500 g?", c: "half a kilo", w: ["a quarter of a kilo", "five kilos", "five grams"]},
+            {q: "How do you say 250 g?", c: "a quarter of a kilo", w: ["half a kilo", "two hundred kilos", "two kilos"]},
+            {q: "How do you say 1 kg?", c: "one kilo", w: ["one gram", "a quarter of a kilo", "half a kilo"]},
+            {q: "How do you say 2 kg?", c: "two kilos", w: ["two grams", "half a kilo", "twenty kilos"]},
+            {q: "How do you say 1 1/2 kg?", c: "one and a half kilos", w: ["one kilo", "two and a half kilos", "half a kilo"]},
+            {q: "How do you say 325 g?", c: "three hundred and twenty-five grams", w: ["three hundred and fifty grams", "three kilos", "twenty-five grams"]},
+            {q: "How do you say 650 g?", c: "six hundred and fifty grams", w: ["six hundred grams", "fifty-six grams", "six kilos"]},
+            {q: "Which weight is equal to half a kilo?", c: "500 g", w: ["250 g", "100 g", "1000 g"]},
+            {q: "Which weight is equal to a quarter of a kilo?", c: "250 g", w: ["500 g", "750 g", "100 g"]},
+
+            // 20 Medium
+            {q: "Which is heavier?\n\n1 kg or 500 g", c: "1 kg", w: ["500 g", "They are the same", "250 g"]},
+            {q: "Which is lighter?\n\n250 g or 1/2 kg", c: "250 g", w: ["1/2 kg", "They are the same", "1 kg"]},
+            {q: "Which is heavier?\n\n3/4 kg or 500 g", c: "3/4 kg", w: ["500 g", "They are the same", "250 g"]},
+            {q: "Which measurement is equal to three quarters of a kilo?", c: "750 g", w: ["250 g", "500 g", "1000 g"]},
+            {q: "How many grams are in 2 kilos?", c: "2000 g", w: ["200 g", "20 g", "2500 g"]},
+            {q: "How many grams are in one and a half kilos?", c: "1500 g", w: ["1050 g", "150 g", "1005 g"]},
+            {q: "A basket weighs 1 kg 250 g.\nAnother basket weighs 900 g.\nWhich is heavier?", c: "The first basket", w: ["The second basket", "They are equal", "Cannot be weighed"]},
+            {q: "A box weighs 650 g.\nAnother box weighs 675 g.\nWhich is lighter?", c: "The first box", w: ["The second box", "They are equal", "Cannot be weighed"]},
+            {q: "Add these weights:\n500 g and 250 g.", c: "750 g", w: ["650 g", "1 kg", "550 g"]},
+            {q: "Add these weights:\n1/2 kg and 1/2 kg.", c: "1 kg", w: ["1/2 kg", "1 1/2 kg", "2 kg"]},
+            {q: "Subtract:\n1 kg minus 250 g.", c: "750 g", w: ["850 g", "500 g", "250 g"]},
+            {q: "Subtract:\n500 g minus 100 g.", c: "400 g", w: ["600 g", "300 g", "500 g"]},
+            {q: "Read the scale: 1.500 kg.\nHow do you say it?", c: "one and a half kilos", w: ["one kilo", "half a kilo", "fifteen kilos"]},
+            {q: "Read the scale: 0.250 kg.\nHow do you say it?", c: "a quarter of a kilo", w: ["half a kilo", "two and a half kilos", "two hundred kilos"]},
+            {q: "Read the scale: 2.500 kg.\nHow do you say it?", c: "two and a half kilos", w: ["two kilos", "twenty-five kilos", "half a kilo"]},
+            {q: "Which phrase matches 675 g?", c: "six hundred and seventy-five grams", w: ["six hundred and fifty grams", "seven hundred and sixty-five grams", "six kilos"]},
+            {q: "Which phrase matches 2 1/4 kg?", c: "two and a quarter kilos", w: ["two and a half kilos", "a quarter of a kilo", "two kilos"]},
+            {q: "Convert to grams: one kilo and a half.", c: "1500 g", w: ["1050 g", "150 g", "1005 g"]},
+            {q: "Convert to kilos: 2500 g.", c: "two and a half kilos", w: ["two kilos", "twenty-five kilos", "half a kilo"]},
+            {q: "Is a quarter of a kilo heavier than 200 g?", c: "Yes", w: ["No", "They are equal", "Not sure"]},
+
+            // 20 Hard
+            {q: "A customer buys 250 g of grapes and half a kilo of strawberries.\nWhat is the total weight?", c: "750 g", w: ["500 g", "1 kg", "250 g"]},
+            {q: "A bag contains 2 1/2 kg of rice.\nThe seller removes 500 g.\nHow much rice is left?", c: "2 kg", w: ["3 kg", "1 1/2 kg", "2 1/2 kg"]},
+            {q: "Which list goes from LIGHTEST to HEAVIEST?", c: "100 g, 250 g, 500 g, 1 kg", w: ["1 kg, 500 g, 250 g, 100 g", "250 g, 100 g, 1 kg, 500 g", "500 g, 100 g, 250 g, 1 kg"]},
+            {q: "Which list goes from HEAVIEST to LIGHTEST?", c: "2 kg, 1 1/2 kg, 1 kg, 750 g", w: ["750 g, 1 kg, 1 1/2 kg, 2 kg", "1 kg, 750 g, 2 kg, 1 1/2 kg", "1 1/2 kg, 2 kg, 750 g, 1 kg"]},
+            {q: "A boy buys three bags of 250 g apples.\nWhat is the total weight?", c: "750 g", w: ["500 g", "1 kg", "250 g"]},
+            {q: "A recipe needs 1 kg of flour.\nYou have 750 g.\nHow much more do you need?", c: "250 g", w: ["500 g", "100 g", "750 g"]},
+            {q: "You have 2 kg of chicken.\nYou cook half a kilo.\nHow much is left?", c: "1 1/2 kg", w: ["1 kg", "2 1/2 kg", "500 g"]},
+            {q: "Which is the heaviest?", c: "1 1/2 kg", w: ["1 kg 250 g", "1200 g", "1400 g"]},
+            {q: "Which is the lightest?", c: "1/2 kg", w: ["3/4 kg", "800 g", "600 g"]},
+            {q: "The scale shows 0.750 kg.\nYou add 250 g.\nWhat does it show now?", c: "1.000 kg", w: ["0.500 kg", "1.250 kg", "0.900 kg"]},
+            {q: "A customer wants 1 1/2 kg of fish.\nThe fish on the scale is 1 kg 250 g.\nWhat must the seller do?", c: "Add fish", w: ["Remove fish", "Do nothing", "Add money"]},
+            {q: "A customer wants a quarter of a kilo of cheese.\nThe scale shows 300 g.\nWhat must the seller do?", c: "Remove cheese", w: ["Add cheese", "Do nothing", "Add money"]},
+            {q: "Add these weights:\n1/4 kg, 1/4 kg, and 1/2 kg.\nWhat is the total?", c: "1 kg", w: ["1 1/2 kg", "3/4 kg", "500 g"]},
+            {q: "Subtract 250 g from 2 kilos.", c: "1 kg 750 g", w: ["1 1/2 kg", "2 kg 250 g", "1 kg 250 g"]},
+            {q: "A bag of oranges is 3 kg.\nA bag of lemons is 1 1/2 kg.\nWhat is the difference?", c: "1 1/2 kg", w: ["1 kg", "2 kg", "4 1/2 kg"]},
+            {q: "Which is the correct way to say 3 kg 250 g?", c: "three kilos and two hundred and fifty grams", w: ["three kilos and twenty-five grams", "three hundred kilos", "two kilos and three hundred grams"]},
+            {q: "How do you say 4 kg 500 g?", c: "four and a half kilos", w: ["four and a quarter kilos", "five kilos", "four hundred kilos"]},
+            {q: "A basket is 500 g.\nYou put 2 kg of pears in it.\nWhat is the total weight?", c: "2 1/2 kg", w: ["2 kg", "1 1/2 kg", "3 kg"]},
+            {q: "Two boxes weigh 500 g each.\nWhat is their total weight?", c: "1 kg", w: ["500 g", "1 1/2 kg", "2 kg"]},
+            {q: "What is half of a quarter kilo?", c: "125 g", w: ["250 g", "500 g", "100 g"]}
+        ];
+
+        // Exactly 50 questions (10 Easy, 20 Medium, 20 Hard) for Round 2
+        const Q_R2 = [
+            // 10 Easy
+            {q: "Complete:\n\n“Good morning. What ______ you like?”", c: "would", w: ["are", "is", "do"]},
+            {q: "Complete:\n\n“I’d ______ a kilo of pears, please.”", c: "like", w: ["likes", "liked", "liking"]},
+            {q: "Complete:\n\n“How ______ is it?”", c: "much", w: ["many", "long", "far"]},
+            {q: "Complete:\n\n“How much ______ they?”", c: "are", w: ["is", "am", "be"]},
+            {q: "Complete:\n\n“______ that everything?”", c: "Is", w: ["Are", "Am", "Be"]},
+            {q: "Complete:\n\n“Anything ______?”", c: "else", w: ["everything", "much", "that"]},
+            {q: "Complete:\n\n“Here you ______.”", c: "are", w: ["go", "is", "be"]},
+            {q: "Complete:\n\n“______ is that?”", c: "How much", w: ["How many", "What", "Who"]},
+            {q: "Complete:\n\n“That’s £4.30, ______.”", c: "please", w: ["everything", "morning", "else"]},
+            {q: "Complete:\n\n“Thanks. ______!”", c: "Bye", w: ["Morning", "Hello", "Please"]},
+
+            // 20 Medium
+            {q: "What is the best reply?\n\n“What would you like?”", c: "I’d like a kilo of pears, please.", w: ["How much is that?", "Is that everything?", "Bye."]},
+            {q: "What is the best reply?\n\n“Is that everything?”", c: "Yes, thanks.", w: ["Good morning.", "£1.75 a kilo.", "A kilo of pears."]},
+            {q: "What is the best reply?\n\n“Anything else?”", c: "Yes, 250 grams of green beans.", w: ["Good morning.", "Is that everything?", "Bye."]},
+            {q: "What is the best reply?\n\n“How much is that?”", c: "That’s £4.30, please.", w: ["Here you are.", "What would you like?", "Anything else?"]},
+            {q: "Who normally says:\n\n“What would you like?”", c: "the seller", w: ["the customer", "the pupil", "nobody"]},
+            {q: "Who normally says:\n\n“I’d like a kilo of pears, please.”", c: "the customer", w: ["the seller", "the shop", "nobody"]},
+            {q: "Which question is correct for ONE item?", c: "How much is it?", w: ["How much are it?", "How much is they?", "How many is it?"]},
+            {q: "Which question is correct for MORE THAN ONE item?", c: "How much are they?", w: ["How much is they?", "How much are it?", "How much is them?"]},
+            {q: "Choose the correct form:\n\n“______ £1.75 a kilo.”", c: "They’re", w: ["It’s", "There", "Their"]},
+            {q: "Choose the correct form:\n\n“______ £4.30.”", c: "It’s", w: ["They’re", "Its", "It"]},
+            {q: "Choose the polite phrase.", c: "Can I have three red peppers, please?", w: ["Give me three red peppers.", "I want three red peppers now.", "Three red peppers."]},
+            {q: "Which matches the question:\n\n“How much are they?”", c: "They’re £1.75 a kilo.", w: ["It’s £1.75 a kilo.", "Is that everything?", "Good morning."]},
+            {q: "Which matches the question:\n\n“How much is it?”", c: "It’s £4.30.", w: ["They’re £4.30.", "What would you like?", "Anything else?"]},
+            {q: "Complete the dialogue:\n\nSeller: “Sure. Here you are.”\nCustomer: “______”", c: "Thanks.", w: ["Good morning.", "What would you like?", "Is that everything?"]},
+            {q: "Complete the dialogue:\n\nCustomer: “Here you are.”\nSeller: “______”", c: "Thanks. Bye!", w: ["I’d like a kilo.", "How much are they?", "What would you like?"]},
+            {q: "Seller: “Anything else?”\nCustomer: “______”", c: "No, that’s everything.", w: ["Good morning.", "Here you are.", "They're £1.50."]},
+            {q: "Customer: “Yes, thanks. How much is that?”\nSeller: “______”", c: "That’s £4.30, please.", w: ["I’d like pears.", "Anything else?", "Good morning."]},
+            {q: "What comes FIRST in a shop?", c: "Good morning.", w: ["Bye.", "How much is that?", "Thanks."]},
+            {q: "What comes LAST in a shop?", c: "Bye.", w: ["Good morning.", "Anything else?", "How much is that?"]},
+            {q: "Which phrase means you are giving money or items?", c: "Here you are.", w: ["What would you like?", "How much is that?", "I’d like..."]},
+
+            // 20 Hard
+            {q: "Which is an INCORRECT shopping expression?", c: "I want pears now.", w: ["I'd like pears, please.", "Can I have some pears?", "Here you are."]},
+            {q: "Identify the WRONG phrase:", c: "How much are that?", w: ["How much is that?", "How much are they?", "How much is it?"]},
+            {q: "You want to know the TOTAL price. What do you say?", c: "How much is that?", w: ["How much is it?", "How much are they?", "What would you like?"]},
+            {q: "The seller gives you the bags and asks if you need more.\nWhat do they say?", c: "Is that everything?", w: ["How much is that?", "Here you are.", "Thanks."]},
+            {q: "Choose the correct response to:\n“How much are the green beans?”", c: "They’re £1.50 a kilo.", w: ["It’s £1.50 a kilo.", "That's £1.50.", "I'd like £1.50."]},
+            {q: "Choose the best response.\nSeller: “Good morning. What would you like?”\nCustomer: “...”", c: "Good morning. I’d like some red peppers, please.", w: ["Bye.", "That's £2.00.", "Is that everything?"]},
+            {q: "What does the customer want?\n“Can I have three red peppers and half a kilo of pears?”", c: "peppers and pears", w: ["pears only", "peppers only", "beans and pears"]},
+            {q: "Put the dialogue in order:\n1. How much is that?\n2. I'd like a kilo of pears.\n3. What would you like?\n4. That's £4.30.", c: "3, 2, 1, 4", w: ["1, 2, 3, 4", "4, 3, 2, 1", "2, 3, 1, 4"]},
+            {q: "Put the dialogue in order:\n1. Is that everything?\n2. Anything else?\n3. Yes, thanks.\n4. Yes, 250g of green beans.", c: "2, 4, 1, 3", w: ["1, 2, 3, 4", "4, 3, 2, 1", "3, 1, 4, 2"]},
+            {q: "Which is a correct short dialogue?", c: "S: What would you like?\nC: I'd like a kilo of pears.\nS: Here you are.", w: ["C: What would you like?\nS: I'd like pears.", "S: How much is that?\nC: Bye.", "S: Is that everything?\nC: Good morning."]},
+            {q: "Which sentence has a grammar mistake?", c: "How much is they?", w: ["How much are they?", "How much is it?", "How much is that?"]},
+            {q: "The customer says “Here you are” while handing over money. What should the seller say?", c: "Thanks. Bye!", w: ["Anything else?", "What would you like?", "How much is that?"]},
+            {q: "A customer wants 1 item.\nWhich is correct?", c: "How much is it?", w: ["How much are they?", "How much are it?", "How much is they?"]},
+            {q: "A customer wants 5 apples.\nWhich is correct?", c: "How much are they?", w: ["How much is it?", "How much are it?", "How much is they?"]},
+            {q: "If the seller says “They’re £1.75 a kilo,”\nwhat did the customer likely ask?", c: "How much are the pears?", w: ["How much is the pear?", "How much is that?", "Anything else?"]},
+            {q: "The customer says “Yes, 250 grams of green beans.”\nWhat did the seller just ask?", c: "Anything else?", w: ["How much is that?", "Is that everything?", "Good morning."]},
+            {q: "Customer: “I’d like a kilo of pears, please.”\nSeller: “OK. _________?”", c: "Anything else", w: ["How much is that", "Here you are", "Thanks"]},
+            {q: "What is another way to politely say “I’d like...”?", c: "Can I have...", w: ["I want...", "Give me...", "I need..."]},
+            {q: "The seller says “That’s £4.30, please.”\nWhat does the customer do next?", c: "Says “Here you are” and pays.", w: ["Asks “How much is that?”", "Says “Anything else?”", "Walks away."]},
+            {q: "Choose the best complete conversation.", c: "S: Good morning.\nC: I’d like a kilo of pears.\nS: Is that everything?\nC: Yes. How much is that?\nS: £4.30.\nC: Here you are.\nS: Thanks. Bye!", w: ["C: Good morning.\nS: I’d like pears.\nC: How much?\nS: £4.30.\nC: Bye.", "S: How much is that?\nC: £4.30.\nS: Here you are.\nC: Thanks.", "C: What would you like?\nS: Pears.\nC: Here you are.\nS: Bye."]}
+        ];
+
+        const TEAM_COLORS = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
+        const PTS_R1 = 10;
+        const PTS_R2 = 20;
+        const TIME_LIMIT = 10; // Exactly 10 seconds per question
+
+        let state = {
+            names: [],
+            teams: [],
+            currentRound: 0,
+            questionQueue: [],
+            currentQIndex: 0,
+            globalQNumber: 1,
+            currentTeamIndex: 0,
+            isStealMode: false,
+            stealTeamIndex: 0,
+            timerInterval: null,
+            timeLeft: TIME_LIMIT,
+            timerPaused: false,
+            gameEndedEarly: false
+        };
+
+        function nav(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        document.getElementById('names-input').addEventListener('input', function() {
+            const lines = this.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            document.getElementById('student-count').textContent = lines.length;
+        });
+
+        function clearNames() {
+            document.getElementById('names-input').value = '';
+            document.getElementById('student-count').textContent = '0';
+        }
+
+        function prepareTeams() {
+            const text = document.getElementById('names-input').value;
+            state.names = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            if(state.names.length < 2) {
+                alert("Please enter at least 2 pupil names.");
+                return;
+            }
+
+            const maxTeams = Math.min(7, Math.max(2, Math.floor(state.names.length / 2))); // Sensible team counts
+            
+            let html = '';
+            for(let i=2; i<=Math.min(7, state.names.length); i++) {
+                html += `<button onclick="generateTeams(${i})" class="btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg focus:bg-blue-500 focus:text-white shadow-sm text-sm md:text-base">${i} TEAMS</button>`;
+            }
+            document.getElementById('team-size-selectors').innerHTML = html;
+            
+            generateTeams(2);
+            nav('screen-teams');
+        }
+
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+
+        function generateTeams(numTeams) {
+            let shuffled = shuffleArray([...state.names]);
+            state.teams = Array.from({length: numTeams}, (_, i) => ({
+                id: i,
+                name: `TEAM ${i+1}`,
+                color: TEAM_COLORS[i % TEAM_COLORS.length],
+                members: [],
+                score: 0,
+                correct: 0,
+                wrong: 0,
+                steals: 0
+            }));
+
+            shuffled.forEach((name, idx) => {
+                state.teams[idx % numTeams].members.push(name);
+            });
+
+            renderTeamsPreview();
+            document.getElementById('btn-start-battle').classList.remove('hidden');
+        }
+
+        function shuffleCurrentTeams() {
+            if(state.teams.length > 0) {
+                generateTeams(state.teams.length);
+            }
+        }
+
+        function renderTeamsPreview() {
+            const container = document.getElementById('teams-container');
+            container.innerHTML = state.teams.map(t => `
+                <div class="glass-panel rounded-2xl p-4 flex flex-col items-center">
+                    <div class="${t.color} text-white font-bold py-1 px-4 rounded-full mb-3 shadow-sm w-full text-center text-sm md:text-base">${t.name}</div>
+                    <ul class="text-gray-700 text-xs md:text-sm w-full text-center space-y-1">
+                        ${t.members.map(m => `<li class="truncate" title="${m}">${m}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function startRound1() {
+            state.currentRound = 1;
+            state.globalQNumber = 1;
+            state.questionQueue = shuffleArray([...Q_R1]);
+            state.currentQIndex = 0;
+            state.currentTeamIndex = Math.floor(Math.random() * state.teams.length);
+            state.gameEndedEarly = false;
+            
+            showTransition("ROUND 1", "SAYING WEIGHTS");
+        }
+
+        function startRound2() {
+            state.currentRound = 2;
+            state.questionQueue = shuffleArray([...Q_R2]);
+            state.currentQIndex = 0;
+            showTransition("ROUND 2", "BUYING THINGS AT THE MARKET");
+        }
+
+        function showTransition(title, subtitle) {
+            document.getElementById('trans-title').textContent = title;
+            document.getElementById('trans-next').textContent = subtitle;
+            
+            let rankHtml = '';
+            if(state.globalQNumber > 1) {
+                let sorted = [...state.teams].sort((a,b) => b.score - a.score);
+                rankHtml = `<h4 class="font-bold text-gray-500 mb-2 text-sm md:text-base">CURRENT STANDINGS</h4>`;
+                sorted.forEach((t, i) => {
+                    rankHtml += `<div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-0 text-sm md:text-lg"><span class="font-bold ${t.color.replace('bg-', 'text-')}">${i+1}. ${t.name}</span><span class="font-mono font-bold">${t.score} pts</span></div>`;
+                });
+            }
+            document.getElementById('trans-rankings').innerHTML = rankHtml;
+            nav('screen-transition');
+        }
+
+        function startNextPhase() {
+            if(arguments.length > 0 && arguments[0] === true) {
+                // Play again same teams
+                state.teams.forEach(t => { t.score=0; t.correct=0; t.wrong=0; t.steals=0; });
+                startRound1();
+                return;
+            }
+            nav('screen-game');
+            loadQuestion();
+        }
+
+        function updateScoreboard() {
+            const container = document.getElementById('ui-scoreboard');
+            const activeIdx = state.isStealMode ? state.stealTeamIndex : state.currentTeamIndex;
+            
+            container.innerHTML = state.teams.map((t, idx) => `
+                <div onclick="showTeamInfo(${idx})" class="flex flex-col items-center min-w-[70px] md:min-w-[90px] bg-gray-50 rounded-lg p-2 shadow-sm border-2 cursor-pointer hover:bg-gray-100 transition-all ${idx === activeIdx ? 'border-yellow-400 bg-yellow-50 transform scale-105 shadow-md' : 'border-transparent'}">
+                    <span class="text-[10px] md:text-xs font-bold text-gray-500 uppercase">${t.name}</span>
+                    <span class="text-base md:text-xl font-mono font-bold ${t.color.replace('bg-', 'text-')} relative" id="score-val-${idx}">
+                        ${t.score}
+                    </span>
+                </div>
+            `).join('');
+            
+            // Auto scroll to active team if offscreen
+            const activeEl = container.children[activeIdx];
+            if(activeEl) {
+                activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }
+
+        function showTeamInfo(idx) {
+            const t = state.teams[idx];
+            document.getElementById('team-info-title').textContent = t.name;
+            document.getElementById('team-info-title').className = `text-2xl font-extrabold mb-4 py-2 rounded-xl text-white ${t.color}`;
+            document.getElementById('team-info-members').innerHTML = t.members.map(m => `<li>${m}</li>`).join('');
+            document.getElementById('team-info-modal').classList.remove('hidden');
+        }
+        function closeTeamInfo() {
+            document.getElementById('team-info-modal').classList.add('hidden');
+        }
+
+        function loadQuestion() {
+            if (state.currentQIndex >= state.questionQueue.length) {
+                if (state.currentRound === 1) {
+                    startRound2();
+                } else {
+                    state.gameEndedEarly = false;
+                    processFinalResults();
+                }
+                return;
+            }
+
+            updateScoreboard();
+            
+            document.getElementById('ui-round-name').textContent = `ROUND ${state.currentRound}`;
+            document.getElementById('ui-q-num').textContent = state.globalQNumber;
+
+            const activeTeam = state.teams[state.isStealMode ? state.stealTeamIndex : state.currentTeamIndex];
+            
+            const turnLabel = document.getElementById('turn-label');
+            const teamName = document.getElementById('current-team-name');
+            const stealBanner = document.getElementById('steal-banner');
+            const stealTeamName = document.getElementById('steal-team-name');
+
+            teamName.textContent = activeTeam.name;
+            teamName.className = `text-xl md:text-3xl font-extrabold truncate block ${activeTeam.color.replace('bg-', 'text-')}`;
+
+            if(state.isStealMode) {
+                turnLabel.textContent = "STEAL ATTEMPT";
+                stealBanner.classList.remove('hidden');
+                stealTeamName.textContent = `${activeTeam.name}'s turn to steal!`;
+            } else {
+                turnLabel.textContent = "CURRENT TURN";
+                stealBanner.classList.add('hidden');
+            }
+
+            const q = state.questionQueue[state.currentQIndex];
+            
+            // Formatting text securely
+            let qText = q.q.replace(/\n/g, '<br>');
+            document.getElementById('question-text').innerHTML = qText;
+
+            // Prepare exactly 4 answers
+            let answers = [{t: q.c, correct: true}, ...q.w.map(w => ({t: w, correct: false}))];
+            answers = shuffleArray(answers);
+            
+            const ansContainer = document.getElementById('answers-container');
+            ansContainer.innerHTML = '';
+            
+            answers.forEach(a => {
+                const btn = document.createElement('button');
+                let textClass = a.t.length > 40 ? 'text-sm md:text-base lg:text-lg' : 'text-base md:text-xl lg:text-2xl';
+                btn.className = `ans-btn btn bg-white hover:bg-gray-50 border-4 border-gray-200 text-gray-800 font-bold p-3 md:p-6 rounded-2xl w-full h-full text-center flex items-center justify-center min-h-[80px] shadow-sm leading-tight ${textClass}`;
+                btn.innerHTML = `<span class="pointer-events-none">${a.t.replace(/\n/g, '<br>')}</span>`;
+                btn.onclick = () => {
+                    if(!state.timerPaused && state.timeLeft > 0) {
+                        handleAnswer(a.correct, btn);
+                    }
+                };
+                ansContainer.appendChild(btn);
+            });
+
+            // Start countdown exactly when UI is fully rendered
+            requestAnimationFrame(() => {
+                startTimer();
+            });
+        }
+
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            state.timeLeft = TIME_LIMIT;
+            state.timerPaused = false;
+            updateTimerUI();
+
+            state.timerInterval = setInterval(() => {
+                if(!state.timerPaused) {
+                    state.timeLeft--;
+                    updateTimerUI();
+
+                    if(state.timeLeft <= 0) {
+                        clearInterval(state.timerInterval);
+                        handleAnswer(false, null, true);
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const bar = document.getElementById('timer-bar');
+            const text = document.getElementById('timer-text');
+            
+            text.textContent = state.timeLeft;
+            const pct = (state.timeLeft / TIME_LIMIT) * 100;
+            
+            if(state.timeLeft === TIME_LIMIT) {
+                bar.style.transition = 'none';
+                bar.style.width = '100%';
+                void bar.offsetWidth; // reflow
+                bar.style.transition = 'width 1s linear, background-color 0.3s';
+            } else {
+                bar.style.width = `${pct}%`;
+            }
+
+            text.classList.remove('text-green-700', 'text-yellow-600', 'text-red-600', 'pulse-text');
+
+            if(state.timeLeft > 5) {
+                bar.className = 'timer-bar-fill bg-green-500';
+                text.classList.add('text-green-700');
+            } else if(state.timeLeft > 3) {
+                bar.className = 'timer-bar-fill bg-yellow-400';
+                text.classList.add('text-yellow-600');
+            } else if(state.timeLeft > 0) {
+                bar.className = 'timer-bar-fill bg-red-500';
+                text.classList.add('text-red-600', 'pulse-text');
+            } else {
+                bar.className = 'timer-bar-fill bg-gray-400';
+                text.textContent = "TIME'S UP!";
+                text.classList.add('text-red-700');
+            }
+        }
+
+        function handleAnswer(isCorrect, btnElement, isTimeout = false) {
+            clearInterval(state.timerInterval);
+            state.timerPaused = true;
+            
+            // Disable all buttons immediately
+            document.querySelectorAll('.ans-btn').forEach(b => {
+                b.disabled = true;
+                b.classList.remove('hover:bg-gray-50', 'active');
+                if(btnElement && !b.isSameNode(btnElement)) {
+                    b.style.opacity = '0.5';
+                } else if(!btnElement) {
+                    b.style.opacity = '0.5';
+                }
+            });
+
+            if (btnElement) {
+                btnElement.classList.add(isCorrect ? 'bg-green-100' : 'bg-red-100');
+                btnElement.classList.replace('border-gray-200', isCorrect ? 'border-green-500' : 'border-red-500');
+            }
+
+            const pointsBase = state.currentRound === 1 ? PTS_R1 : PTS_R2;
+            const pointsEarned = state.isStealMode ? Math.floor(pointsBase / 2) : pointsBase;
+            const activeIdx = state.isStealMode ? state.stealTeamIndex : state.currentTeamIndex;
+            let currentTeam = state.teams[activeIdx];
+
+            if(isCorrect) {
+                currentTeam.score += pointsEarned;
+                currentTeam.correct++;
+                if(state.isStealMode) currentTeam.steals++;
+                
+                updateScoreboard(); // Reflect immediately
+                showFeedback(`+${pointsEarned}`, 'text-green-400');
+                animateScoreAdd(activeIdx, pointsEarned);
+
+                setTimeout(() => {
+                    if(state.timerPaused === "END_GAME_PENDING") return; // Block transition if ending game
+                    if(state.isStealMode) {
+                        state.isStealMode = false;
+                        state.currentTeamIndex = state.stealTeamIndex; 
+                    }
+                    nextQuestion();
+                }, 1500);
+
+            } else {
+                currentTeam.wrong++;
+                updateScoreboard();
+                showFeedback(isTimeout ? "TIME'S UP!" : "WRONG", 'text-red-500');
+
+                setTimeout(() => {
+                    if(state.timerPaused === "END_GAME_PENDING") return;
+                    
+                    if(!state.isStealMode && state.teams.length > 1) {
+                        state.isStealMode = true;
+                        state.stealTeamIndex = (state.currentTeamIndex + 1) % state.teams.length;
+                        loadQuestion(); // Reload fresh 10s for steal
+                    } else {
+                        if(state.isStealMode) {
+                            state.currentTeamIndex = state.stealTeamIndex;
+                        } else {
+                            state.currentTeamIndex = (state.currentTeamIndex + 1) % state.teams.length;
+                        }
+                        state.isStealMode = false;
+                        nextQuestion();
+                    }
+                }, 1500);
+            }
+        }
+
+        function nextQuestion() {
+            state.currentQIndex++;
+            state.globalQNumber++;
+            loadQuestion();
+        }
+
+        function showFeedback(text, colorClass) {
+            const overlay = document.getElementById('feedback-overlay');
+            const msg = document.getElementById('feedback-message');
+            msg.textContent = text;
+            msg.className = `text-5xl md:text-8xl lg:text-9xl font-extrabold transform transition-transform duration-300 drop-shadow-2xl text-center px-4 leading-tight ${colorClass}`;
+            
+            overlay.classList.remove('hidden');
+            void msg.offsetWidth;
+            msg.classList.replace('scale-0', 'scale-100');
+
+            setTimeout(() => {
+                msg.classList.replace('scale-100', 'scale-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }, 1000);
+        }
+
+        function animateScoreAdd(teamIdx, amount) {
+            const el = document.getElementById(`score-val-${teamIdx}`);
+            if(!el) return;
+            const float = document.createElement('div');
+            float.textContent = `+${amount}`;
+            float.className = 'absolute -top-8 left-1/2 transform -translate-x-1/2 text-green-500 font-bold text-lg md:text-xl score-change';
+            el.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        function requestEndGame() {
+            // Pause timer and block interactions
+            clearInterval(state.timerInterval);
+            state.timerPaused = true;
+            document.getElementById('end-confirm-modal').classList.remove('hidden');
+        }
+
+        function cancelEndGame() {
+            document.getElementById('end-confirm-modal').classList.add('hidden');
+            // Only resume if we were actually waiting for answer
+            // If we are in transition (timer already stopped by handleAnswer), don't restart interval
+            if(document.querySelectorAll('.ans-btn:not(:disabled)').length > 0) {
+                state.timerPaused = false;
+                state.timerInterval = setInterval(() => {
+                    if(!state.timerPaused) {
+                        state.timeLeft--;
+                        updateTimerUI();
+                        if(state.timeLeft <= 0) {
+                            clearInterval(state.timerInterval);
+                            handleAnswer(false, null, true);
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function confirmEndGame() {
+            document.getElementById('end-confirm-modal').classList.add('hidden');
+            state.timerPaused = "END_GAME_PENDING"; // Hard block pending timeouts
+            clearInterval(state.timerInterval);
+            document.getElementById('feedback-overlay').classList.add('hidden'); // Clear any feedback
+            
+            if(state.globalQNumber <= 100 && state.currentQIndex < state.questionQueue.length) {
+                state.gameEndedEarly = true;
+            } else {
+                state.gameEndedEarly = false;
+            }
+            
+            processFinalResults();
+        }
+
+        function processFinalResults() {
+            let sorted = [...state.teams].sort((a,b) => b.score - a.score);
+            const highestScore = sorted[0]?.score || 0;
+            
+            // Check for ties
+            const winners = sorted.filter(t => t.score === highestScore);
+            
+            const header = document.getElementById('results-title-header');
+            if(state.gameEndedEarly) {
+                header.innerHTML = `⚠️ GAME ENDED EARLY ⚠️<br><span class="text-3xl md:text-4xl text-gray-500 block mt-2">CURRENT STANDINGS</span>`;
+            } else {
+                header.innerHTML = `🏆 MARKET CHAMPIONS 2026 🏆`;
+                triggerConfetti();
+            }
+
+            const container = document.getElementById('all-teams-results');
+            container.innerHTML = sorted.map((t, i) => {
+                let placementText = `${i+1}TH PLACE`;
+                let medal = '';
+                let bgClass = 'bg-white';
+                let borderClass = 'border-gray-200';
+                
+                // Handle shared first place visually
+                if(t.score === highestScore && highestScore > 0) {
+                    placementText = winners.length > 1 ? `SHARED 1ST PLACE` : `1ST PLACE`;
+                    medal = '🥇';
+                    bgClass = 'bg-yellow-50';
+                    borderClass = 'border-yellow-400';
+                } else if(i === 1) { placementText = '2ND PLACE'; medal = '🥈'; }
+                else if(i === 2) { placementText = '3RD PLACE'; medal = '🥉'; }
+
+                return `
+                <div class="${bgClass} border-4 ${borderClass} rounded-2xl p-4 md:p-6 shadow-lg flex flex-col h-full relative overflow-hidden">
+                    <div class="absolute top-0 right-0 ${t.color} w-16 h-16 rounded-bl-full opacity-20 pointer-events-none"></div>
+                    
+                    <div class="flex justify-between items-start border-b-2 border-gray-100 pb-3 mb-3">
+                        <div>
+                            <div class="text-xs md:text-sm font-bold text-gray-500 tracking-wider">${placementText} ${medal}</div>
+                            <div class="text-2xl md:text-3xl font-extrabold ${t.color.replace('bg-','text-')} mt-1">${t.name}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-gray-500">TOTAL SCORE</div>
+                            <div class="text-3xl md:text-4xl font-mono font-black text-gray-800">${t.score}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                        <div class="bg-green-50 rounded-lg p-2">
+                            <div class="text-[10px] md:text-xs font-bold text-green-600 uppercase">Correct</div>
+                            <div class="text-lg md:text-xl font-bold text-green-700">${t.correct}</div>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-2">
+                            <div class="text-[10px] md:text-xs font-bold text-red-600 uppercase">Wrong</div>
+                            <div class="text-lg md:text-xl font-bold text-red-700">${t.wrong}</div>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-2">
+                            <div class="text-[10px] md:text-xs font-bold text-blue-600 uppercase">Steals</div>
+                            <div class="text-lg md:text-xl font-bold text-blue-700">${t.steals}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto pt-2">
+                        <div class="text-xs font-bold text-gray-400 uppercase mb-1">TEAM MEMBERS:</div>
+                        <div class="text-sm text-gray-700 font-medium leading-relaxed bg-gray-50 p-2 rounded-lg">
+                            ${t.members.join(', ')}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            nav('screen-results');
+        }
+
+        // Lightweight Confetti
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti');
+            canvas.classList.remove('hidden');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const particles = [];
+            const colors = ['#fde047', '#ef4444', '#3b82f6', '#10b981', '#a855f7'];
+            
+            for(let i=0; i<150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 10 + 5,
+                    vx: Math.random() * 4 - 2,
+                    vy: Math.random() * 5 + 2,
+                    c: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360,
+                    rotv: Math.random() * 5 - 2.5
+                });
+            }
+            
+            let frame;
+            let startTime = Date.now();
+            
+            function animate() {
+                if(Date.now() - startTime > 4000) {
+                    canvas.classList.add('hidden');
+                    return;
+                }
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rot += p.rotv;
+                    ctx.save();
+                    ctx.translate(p.x + p.w/2, p.y + p.h/2);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    ctx.fillStyle = p.c;
+                    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                    ctx.restore();
+                });
+                frame = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // Handle window resize for confetti canvas
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('confetti');
+            if(!canvas.classList.contains('hidden')) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        });
+
+    </script>
+</body>
+</html>
